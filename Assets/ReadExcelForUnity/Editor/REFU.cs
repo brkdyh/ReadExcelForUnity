@@ -4,9 +4,123 @@ using OfficeOpenXml;
 using UnityEditor;
 using UnityEngine;
 using System;
+using System.Xml;
 
 namespace REFU
 {
+    public class REFU_Data
+    {
+        XmlDocument data;
+        public string dataPath { get { return Application.dataPath.Replace("Assets", "ProjectSettings/") + "REFU.xml"; } }
+
+        public class GenCodeConfig
+        {
+            public bool use_namespace;
+        }
+
+        XmlNode genCodeConfigNode;
+        Dictionary<string, GenCodeConfig> genCodeConfigs = new Dictionary<string, GenCodeConfig>(); 
+
+        public REFU_Data()
+        {
+            if (!File.Exists(dataPath))
+            {
+                XmlDocument new_data = new XmlDocument();
+
+                XmlElement root = new_data.CreateElement("root");
+                new_data.AppendChild(root);
+
+
+                var gcc = new_data.CreateElement("GenerateCodeConfig");
+                root.AppendChild(gcc);
+
+                SaveXml(new_data);
+            }
+        }
+
+        void SaveXml(XmlDocument xml)
+        {
+            using (var sw = File.CreateText(dataPath))
+            {
+                //sw.Write(new_data.ToString());
+                xml.Save(sw);
+                sw.Flush();
+            }
+        }
+
+        void SaveXml()
+        {
+            SaveXml(data);
+        }
+
+        public void LoadData()
+        {
+            string xml;
+            using (var sr = File.OpenText(dataPath))
+            {
+                xml = sr.ReadToEnd();
+            }
+            data = new XmlDocument();
+            data.LoadXml(xml);
+
+
+            genCodeConfigs.Clear();
+
+            var root = data.DocumentElement;
+
+            genCodeConfigNode = root.ChildNodes[0];
+            foreach (var genConfig in genCodeConfigNode.ChildNodes)
+            {
+                var ele = genConfig as XmlElement;
+                GenCodeConfig gcc = new GenCodeConfig();
+                string path = ele.GetAttribute("source_file_path");
+                gcc.use_namespace = bool.Parse(ele.GetAttribute("use_namespace"));
+
+                genCodeConfigs.Add(path, gcc);
+            }
+        }
+
+        XmlElement FindGenCodeConfigNode(string sourceFilePath)
+        {
+            foreach (var genConfig in genCodeConfigNode.ChildNodes)
+            {
+                var ele = genConfig as XmlElement;
+                string path = ele.GetAttribute("source_file_path");
+                if (path == sourceFilePath)
+                    return ele;
+            }
+
+            return null;
+        }
+
+        public void SetSourceUseNamespace(string sourceFilePath, bool useNamespace)
+        {
+            if (!genCodeConfigs.ContainsKey(sourceFilePath))
+            {
+                genCodeConfigs.Add(sourceFilePath, new GenCodeConfig());
+                XmlElement ele = data.CreateElement("Content");
+                ele.SetAttribute("source_file_path", sourceFilePath);
+                genCodeConfigNode.AppendChild(ele);
+            }
+
+            genCodeConfigs[sourceFilePath].use_namespace = useNamespace;
+
+            var node = FindGenCodeConfigNode(sourceFilePath);
+            if (node != null)
+                node.SetAttribute("use_namespace", useNamespace.ToString());
+
+            SaveXml();
+        }
+
+        public bool GetSourceUseNamespace(string sourceFilePath)
+        {
+            if (genCodeConfigs.ContainsKey(sourceFilePath))
+                return genCodeConfigs[sourceFilePath].use_namespace;
+
+            return false;
+        }
+    }
+
     public class REFU : EditorWindow
     {
 
@@ -17,17 +131,38 @@ namespace REFU
             if (instance == null)
             {
                 instance = CreateWindow<REFU>();
-                instance.minSize = new Vector2(480, 200);
-                instance.title = "REFU Window";
-                instance.exportPath = Application.dataPath + "/Resources/REFU";
+                instance.Init();
             }
 
             instance.Show();
             instance.Focus();
         }
 
+
+        REFU_Data data;
+
+        string lastSelectPath;
         string excelPath;
         string exportPath;
+
+        bool useNamespace = false;
+
+        public void Init()
+        {
+            minSize = new Vector2(480, 200);
+            title = "REFU Window";
+            exportPath = Application.dataPath + "/Resources/REFU";
+            data = new REFU_Data();
+            data.LoadData();
+
+            lastSelectPath = excelPath;
+        }
+
+        void onSelectExcelChange()
+        {
+            useNamespace = data.GetSourceUseNamespace(excelPath);
+        }
+
         private void OnGUI()
         {
             GUILayout.Space(10);
@@ -40,6 +175,11 @@ namespace REFU
             if (GUILayout.Button("选择表格文件"))
             {
                 excelPath = EditorUtility.OpenFilePanel("选择Excel表格", Application.dataPath.Replace("/Assets", ""), "xlsx,xls");
+                if(lastSelectPath!= excelPath)
+                {
+                    lastSelectPath = excelPath;
+                    onSelectExcelChange();
+                }
             }
 
             GUILayout.EndHorizontal();
@@ -76,6 +216,13 @@ namespace REFU
 
             GUILayout.BeginHorizontal("box");
             GUILayout.Space(10);
+
+            useNamespace = GUILayout.Toggle(useNamespace, "使用命名空间");
+            if (useNamespace != data.GetSourceUseNamespace(excelPath))
+            {
+                data.SetSourceUseNamespace(excelPath, useNamespace);
+            }
+
             if (GUILayout.Button("生成数据类型"))
             {
                 ClearLoad();
@@ -84,10 +231,19 @@ namespace REFU
                     foreach (var sheet in _excelWorksheet)
                     {
                         var tfi = getFieldInfo(sheet.Value);
-                        CodeGenerator.CreateType(sheet.Key, tfi);
+
+                        string code_namespace = "";
+                        bool use_namespace = data.GetSourceUseNamespace(excelPath);
+                        if (use_namespace)
+                            code_namespace = Path.GetFileName(excelPath.Replace(Path.GetExtension(excelPath), ""));
+                        Debug.Log(code_namespace);
+                        CodeGenerator.CreateType(sheet.Key, tfi, code_namespace);
                     }
                 }
             }
+
+            GUILayout.Space(10);
+            GUILayout.EndHorizontal();
 
             if (GUILayout.Button("读取表格数据"))
             {
@@ -108,8 +264,7 @@ namespace REFU
                 AssetDatabase.Refresh();
             }
 
-            GUILayout.Space(10);
-            GUILayout.EndHorizontal();
+
 
             GUILayout.Space(20);
 

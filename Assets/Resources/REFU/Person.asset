@@ -9,8 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c10c603f00624a05b0bd56f33be8a34, type: 3}
-  m_Name: GPA
+  m_Script: {fileID: 11500000, guid: d950daac46231446b9ef33763118a7f2, type: 3}
+  m_Name: Person
   m_EditorClassIdentifier: 
-  Grade: 010000000200000003000000
-  Score: 6300000000000000e7030000000000000f27000000000000
+  Name:
+  - "\u5F20\u4E00"
+  - "\u674E\u4E8C"
+  - "\u738B\u4E09"
+  Age: 1c0000003700000010000000
+  Money:
+  - 105467.567
+  - 999.2554
+  - 35485.12
