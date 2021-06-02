@@ -15,13 +15,13 @@ namespace REFU
     {
         static string CodeGeneratePath { get { return Application.dataPath + "/REFUGenCodes/"; } }
 
-        public static void CreateType(string typeName, TypeFieldInfo[] typeFields, string use_namespace = "")
+        public static void CreateType(string SourcefileName, string typeName, TypeFieldInfo[] typeFields, string use_namespace = "")
         {
-            string gen_path = CodeGeneratePath;
-            if (!string.IsNullOrEmpty(use_namespace))
-            {
-                gen_path += use_namespace + "/";
-            }
+            string gen_path = CodeGeneratePath + SourcefileName + "/";
+            //if (!string.IsNullOrEmpty(use_namespace))
+            //{
+            //    gen_path += use_namespace + "/";
+            //}
 
             if (!Directory.Exists(gen_path))
                 Directory.CreateDirectory(gen_path);

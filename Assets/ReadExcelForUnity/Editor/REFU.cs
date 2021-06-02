@@ -138,8 +138,20 @@ namespace REFU
             instance.Focus();
         }
 
+        static REFU_Data _refu_data;
+        REFU_Data refu_data
+        {
+            get
+            {
+                if (_refu_data == null)
+                {
+                    _refu_data = new REFU_Data();
+                    _refu_data.LoadData();
+                }
 
-        REFU_Data data;
+                return _refu_data;
+            }
+        }
 
         string lastSelectPath;
         string excelPath;
@@ -147,20 +159,22 @@ namespace REFU
 
         bool useNamespace = false;
 
+        string GetFileName(string path)
+        {
+            return Path.GetFileName(path).Replace(Path.GetExtension(path), "");
+        }
+
         public void Init()
         {
             minSize = new Vector2(480, 200);
             title = "REFU Window";
             exportPath = Application.dataPath + "/Resources/REFU";
-            data = new REFU_Data();
-            data.LoadData();
-
             lastSelectPath = excelPath;
         }
 
         void onSelectExcelChange()
         {
-            useNamespace = data.GetSourceUseNamespace(excelPath);
+            useNamespace = refu_data.GetSourceUseNamespace(excelPath);
         }
 
         private void OnGUI()
@@ -218,9 +232,9 @@ namespace REFU
             GUILayout.Space(10);
 
             useNamespace = GUILayout.Toggle(useNamespace, "使用命名空间");
-            if (useNamespace != data.GetSourceUseNamespace(excelPath))
+            if (useNamespace != refu_data.GetSourceUseNamespace(excelPath))
             {
-                data.SetSourceUseNamespace(excelPath, useNamespace);
+                refu_data.SetSourceUseNamespace(excelPath, useNamespace);
             }
 
             if (GUILayout.Button("生成数据类型"))
@@ -233,11 +247,11 @@ namespace REFU
                         var tfi = getFieldInfo(sheet.Value);
 
                         string code_namespace = "";
-                        bool use_namespace = data.GetSourceUseNamespace(excelPath);
+                        bool use_namespace = refu_data.GetSourceUseNamespace(excelPath);
                         if (use_namespace)
-                            code_namespace = Path.GetFileName(excelPath.Replace(Path.GetExtension(excelPath), ""));
-                        Debug.Log(code_namespace);
-                        CodeGenerator.CreateType(sheet.Key, tfi, code_namespace);
+                            code_namespace = GetFileName(excelPath);
+                        //Debug.Log(code_namespace);
+                        CodeGenerator.CreateType(GetFileName(excelPath), sheet.Key, tfi, code_namespace);
                     }
                 }
             }
@@ -255,13 +269,21 @@ namespace REFU
                 {
                     foreach (var sheet in _excelWorksheet)
                     {
+
+                        string code_namespace = "";
+                        bool use_namespace = refu_data.GetSourceUseNamespace(excelPath);
+                        if (use_namespace)
+                            code_namespace = GetFileName(excelPath);
+
                         var tfi = getFieldInfo(sheet.Value);
-                        LoadSheet(sheet.Value, tfi);
+                        LoadSheet(sheet.Value, tfi, code_namespace);
                     }
                 }
 
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
+
+                EditorUtility.DisplayDialog("读取完成", "表格数据与读取完成，文件生成路径为 " + exportPath, "确定");
             }
 
 
@@ -341,7 +363,7 @@ namespace REFU
         }
 
         //加载表格，反射赋值
-        void LoadSheet(ExcelWorksheet sheet, TypeFieldInfo[] fieldInfos)
+        void LoadSheet(ExcelWorksheet sheet, TypeFieldInfo[] fieldInfos,string use_namespace)
         {
             if (sheet == null)
             {
@@ -357,7 +379,8 @@ namespace REFU
             //    Debug.LogError("Can't Find Mapping Type by Sheet : " + sheet.Name);
             //    return;
             //}
-            var data = ScriptableObject.CreateInstance(sheet.Name);
+
+            var data = ScriptableObject.CreateInstance((string.IsNullOrEmpty(use_namespace) ? "" : use_namespace + ".") + sheet.Name);
 
             if (data == null)
             {
