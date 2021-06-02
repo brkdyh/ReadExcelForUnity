@@ -128,14 +128,20 @@ namespace REFU
         [MenuItem("REFU/Open Window")]
         public static void OpenWindow()
         {
+            GetInstance();
+            instance.Show();
+            instance.Focus();
+        }
+
+        public static REFU GetInstance()
+        {
             if (instance == null)
             {
                 instance = CreateWindow<REFU>();
                 instance.Init();
             }
 
-            instance.Show();
-            instance.Focus();
+            return instance;
         }
 
         static REFU_Data _refu_data;
@@ -159,7 +165,7 @@ namespace REFU
 
         bool useNamespace = false;
 
-        string GetFileName(string path)
+        public static string GetFileName(string path)
         {
             return Path.GetFileName(path).Replace(Path.GetExtension(path), "");
         }
@@ -276,7 +282,7 @@ namespace REFU
                             code_namespace = GetFileName(excelPath);
 
                         var tfi = getFieldInfo(sheet.Value);
-                        LoadSheet(sheet.Value, tfi, code_namespace);
+                        LoadSheet(sheet.Value, tfi, code_namespace, exportPath);
                     }
                 }
 
@@ -363,7 +369,7 @@ namespace REFU
         }
 
         //加载表格，反射赋值
-        void LoadSheet(ExcelWorksheet sheet, TypeFieldInfo[] fieldInfos,string use_namespace)
+        void LoadSheet(ExcelWorksheet sheet, TypeFieldInfo[] fieldInfos,string use_namespace,string exportPath)
         {
             if (sheet == null)
             {
@@ -438,5 +444,41 @@ namespace REFU
             var path = exportPath.Replace(Application.dataPath, "Assets/");
             AssetDatabase.CreateAsset(data, path + "/" + sheet.Name + ".asset");
         }
+
+
+        /// <summary>
+        /// 对外接口，读取表格数据
+        /// </summary>
+        /// <param name="excelPath">表格路径</param>
+        /// <param name="exportPath">输出路径</param>
+        public static void ReadExcel(string excelPath, string exportPath)
+        {
+            var refu = GetInstance();
+            if (!Directory.Exists(exportPath))
+                Directory.CreateDirectory(exportPath);
+
+            refu.ClearLoad();
+            using (var excel = refu.LoadExcel(excelPath))
+            {
+                foreach (var sheet in refu._excelWorksheet)
+                {
+
+                    string code_namespace = "";
+                    bool use_namespace = refu.refu_data.GetSourceUseNamespace(excelPath);
+                    if (use_namespace)
+                        code_namespace = GetFileName(excelPath);
+
+                    var tfi = refu.getFieldInfo(sheet.Value);
+                    refu.LoadSheet(sheet.Value, tfi, code_namespace, exportPath);
+                }
+            }
+
+            refu.Close();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            Debug.Log(string.Format("读取表格 {0} 数据完成", GetFileName(excelPath)));
+        }
     }
+
 }
