@@ -5,7 +5,7 @@ Unity自动化读取Excel工具
 ## 使用说明
   #### 一.拷贝 Assets/ReadExcelForUnity 路径下的全部文件到 Unity 工程中。
   
-  #### 二.按如下格式编辑Excel表格
+  #### 二.按如下格式编辑Excel表格,表格第一行为字段名称，第二行为字段数据类型。
   #### 示例：
   Name|Age|Money
   ---|:--|:--:
