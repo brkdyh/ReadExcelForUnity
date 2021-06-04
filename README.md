@@ -3,8 +3,18 @@ Unity自动化读取Excel工具
 
 ----
 ## 使用说明
-  #### 拷贝 Assets/ReadExcelForUnity 路径下的全部文件到 Unity 工程中。
-  #### 顶部工具栏 *REFU/Open Window* 打开窗口。
+  #### 一.拷贝 Assets/ReadExcelForUnity 路径下的全部文件到 Unity 工程中。
+  
+  #### 二.按如下格式编辑Excel表格
+  #### 示例：
+  Name|Age|Money
+  ---|:--|:--:
+  string|int|double
+  张三|20|59.56
+  李四|66|995.566
+  王五|32|9874554.221
+  
+  #### 三.顶部工具栏 *REFU/Open Window* 打开窗口。
     1. 选择表格文件。
     2. 生成数据类型代码。
     3. 设置输出路径。
