@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<root>
-  <GenerateCodeConfig>
-    <Content source_file_path="/Users/dongyh/ReadExcelForUnity/Documents/TestExcel_B.xlsx" use_namespace="False" />
-    <Content source_file_path="/Users/dongyh/ReadExcelForUnity/Documents/TestExcel_A.xlsx" use_namespace="False" />
-    <Content source_file_path="/Users/dongyh/ReadExcelForUnity/Documents/TestExcel_C.xlsx" use_namespace="True" />
-  </GenerateCodeConfig>
-</root>
